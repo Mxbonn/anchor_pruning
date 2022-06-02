@@ -15,8 +15,8 @@ def convert(args):
 
     anchor_generator = cfg.model.bbox_head.anchor_generator
     anchor_generator_type = anchor_generator.type
-    if anchor_generator_type in ['SSDAnchorGenerator']:
-        print(f"Converting generator of the type {anchor_generator_type} to PreciseAnchorGenerator.")
+    print(f"Converting generator of the type {anchor_generator_type} to PreciseAnchorGenerator.")
+
     pprint(anchor_generator, sort_dicts=False)
 
     print(f"Old config used:")
@@ -29,9 +29,11 @@ def convert(args):
         'scale_ratios': scale_ratios,
         'anchor_base_size': anchor_base_size
     }
+    if anchor_generator_type == 'SSDAnchorGenerator':
+        new_config['centers'] = [(stride/2, stride/2) for stride in anchor_generator.strides]
 
     model = build_detector(cfg.model, train_cfg=None, test_cfg=cfg.get('test_cfg'))
-    for base_anchors in model.bbox_head.anchor_generator.base_anchors:
+    for base_anchors in model.bbox_head.prior_generator.base_anchors:
         scale_ratios_level = []
         for anchor_box in base_anchors:
             anchor_w = (anchor_box[2] - anchor_box[0])

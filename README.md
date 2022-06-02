@@ -34,13 +34,16 @@ shape of anchors.
 
 ## Results and models of SSD
 
-| Anchor Configuration          | AP .50:.95 | FLOPS head | BBoxes | Config                                                                                    | Download                                                                                             |
-|-------------------------------|------------|------------|--------|-------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|
-| SSD Baseline                  | 25.6       | 4231M      | 8732   | [config](https://github.com/Mxbonn/anchor_pruning/tree/master/configs/ssd_baseline.py)    | [model](https://cloud.ilabt.imec.be/index.php/s/ERxYsRMidPEgNwT)    |
-| Configuration-A retrained     | 25.4       | 3607M      | 7814   | [config](https://github.com/Mxbonn/anchor_pruning/tree/master/configs/configuration_A.py) | [model](https://cloud.ilabt.imec.be/index.php/s/ERxYsRMidPEgNwT) |
-| **Configuration-B retrained** | 25.6       | 2476M      | 4926   | [config](https://github.com/Mxbonn/anchor_pruning/tree/master/configs/configuration_B.py) | [model](https://cloud.ilabt.imec.be/index.php/s/ERxYsRMidPEgNwT) |
-| Configuration-C retrained     | 25.2       | 1628M      | 3121   | [config](https://github.com/Mxbonn/anchor_pruning/tree/master/configs/configuration_C.py) | [model](https://cloud.ilabt.imec.be/index.php/s/ERxYsRMidPEgNwT) |
-| Configuration-D retrained     | 22.8       | 774M       | 1291   | [config](https://github.com/Mxbonn/anchor_pruning/tree/master/configs/configuration_D.py) | [model](https://cloud.ilabt.imec.be/index.php/s/ERxYsRMidPEgNwT) |
+| Anchor Configuration              | AP .50:.95 | FLOPS head | BBoxes | Config                                                                                        | Download                                                                                             |
+|-----------------------------------|------------|------------|--------|-----------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|
+| SSD Baseline                      | 25.6       | 4231M      | 8732   | [config](https://github.com/Mxbonn/anchor_pruning/tree/master/configs/ssd/baseline.py)        | [model](https://cloud.ilabt.imec.be/index.php/s/ERxYsRMidPEgNwT)    |
+| SSD Configuration-A retrained     | 25.4       | 3607M      | 7814   | [config](https://github.com/Mxbonn/anchor_pruning/tree/master/configs/ssd/configuration_A.py) | [model](https://cloud.ilabt.imec.be/index.php/s/ERxYsRMidPEgNwT) |
+| **SSD Configuration-B retrained** | 25.6       | 2476M      | 4926   | [config](https://github.com/Mxbonn/anchor_pruning/tree/master/configs/ssd/configuration_B.py) | [model](https://cloud.ilabt.imec.be/index.php/s/ERxYsRMidPEgNwT) |
+| SSD Configuration-C retrained     | 25.2       | 1628M      | 3121   | [config](https://github.com/Mxbonn/anchor_pruning/tree/master/configs/ssd/configuration_C.py) | [model](https://cloud.ilabt.imec.be/index.php/s/ERxYsRMidPEgNwT) |
+| SSDConfiguration-D retrained      | 22.8       | 774M       | 1291   | [config](https://github.com/Mxbonn/anchor_pruning/tree/master/configs/ssd/configuration_D.py) | [model](https://cloud.ilabt.imec.be/index.php/s/ERxYsRMidPEgNwT) |
+|    ||||||
+| RetinaNet Baseline                | 36.5       | 129B       |    | [config](https://github.com/Mxbonn/anchor_pruning/tree/master/configs/retinanet/baseline.py)  | [model](https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_fpn_1x_coco/retinanet_r50_fpn_1x_coco_20200130-c2398f9e.pth) |
+| RetinaNet Pruned                  | 34.8       | **31B**    |    | [config](https://github.com/Mxbonn/anchor_pruning/tree/master/configs/retinanet/pruned.py)    | [model](https://cloud.ilabt.imec.be/index.php/s/ERxYsRMidPEgNwT) |
 
 
 
