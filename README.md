@@ -55,7 +55,17 @@ shape of anchors.
 ## Installation
 
 This repository builds upon [MMDetection](https://github.com/open-mmlab/mmdetection). 
+
 See [The MMDetection documentation](https://github.com/open-mmlab/mmdetection/blob/master/docs/en/get_started.md) for installation instructions.
+Last confirmed working version is mmdet v2.25.0 with mmcv-full v1.4.8
+```bash
+pip install openmim
+mim install mmcv-full==1.4.8
+git clone https://github.com/open-mmlab/mmdetection.git
+cd mmdetection
+git switch --detach v2.25.0
+pip install -v -e .
+```
 
 Next, clone our repository and install the anchor pruning package
 ```bash
@@ -67,3 +77,9 @@ pip install -e .
 
 ## Getting started.
 Please see [`Tutorial.ipynb`](Tutorial.ipynb) for a general guide on how to do anchor pruning.
+
+To run the given pretrained models above run
+```bash
+python tools/mmdet_test.py configs/ssd/configuration_B.py pretrained_models/configuration_B.pth --eval bbox
+```
+after modifying the paths to the mmdet base config in `configuration_X.py` and linking your dataset directory to `data/` similarly as required for mmdetection.
