@@ -191,7 +191,7 @@ class NodeSlow(Node):
                 dist=False,
                 shuffle=False
             )
-            raw_model = mmdet.models.build_detector(self.base_cfg.model, train_cfg=None, test_cfg=self.base_cfg.test_cfg)
+            raw_model = mmdet.models.build_detector(self.base_cfg.model)
             checkpoint = mmcv.runner.load_checkpoint(raw_model, str(self.checkpoint_path), map_location='cpu')
             raw_model.CLASSES = test_dataloader.dataset.CLASSES
             model = mmcv.parallel.MMDataParallel(raw_model, device_ids=[0])
@@ -240,8 +240,9 @@ class NodeSlow(Node):
                             filtered_bboxes.extend(get_bbox_indices(anchor, mlvl_anchors, featmap_sizes))
                         filtered_bboxes.sort()
                         mlvl_scores[filtered_bboxes, :] = 0
-                        det_bboxes, det_labels = mmdet.core.multiclass_nms(mlvl_bboxes, mlvl_scores, self.base_cfg.test_cfg.score_thr,
-                                                                           self.base_cfg.test_cfg.nms, self.base_cfg.test_cfg.max_per_img)
+                        test_cfg = self.base_cfg.model.test_cfg
+                        det_bboxes, det_labels = mmdet.core.multiclass_nms(mlvl_bboxes, mlvl_scores, test_cfg.score_thr,
+                                                                           test_cfg.nms, test_cfg.max_per_img)
                         bbox_results = mmdet.core.bbox2result(det_bboxes, det_labels, self.base_cfg.model.bbox_head.num_classes)
                 reproduced_results.append(bbox_results)
             bbox_map = self.test_dataset.evaluate(reproduced_results)
