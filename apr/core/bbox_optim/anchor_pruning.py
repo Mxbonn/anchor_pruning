@@ -70,8 +70,6 @@ class Node:
             head_input = new_neck(backbone_output)
         else:
             head_input = backbone_output
-        if self.cfg["model"]["bbox_head"]["type"] == "RetinaHead":
-            self.cfg["model"]["bbox_head"]["type"] = "RetinaHeadModified"
         bbox_head = mmdet.models.build_head(self.cfg["model"]["bbox_head"])
         bbox_head.eval()
         macs = profile_macs(bbox_head, (head_input,))
