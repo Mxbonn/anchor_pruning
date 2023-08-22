@@ -1,7 +1,9 @@
 import copy
 import functools
+import logging
 import os
 import pickle
+import sys
 from pathlib import Path
 
 import mmcv.parallel
@@ -16,6 +18,7 @@ from .bbox_tools import get_bbox_indices, get_bboxes_single
 from .nms_tools import multiclass_nms
 from tqdm import tqdm
 
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
 class Node:
     random_input = torch.randn(1, 3, 300, 300)
@@ -117,7 +120,7 @@ class Node:
 
     def __repr__(self):
         setstr = repr((sorted(list(self.removed_anchors)))).replace('[', '{').replace(']', '}')
-        return f"Node with {setstr} pruned."
+        return f"Node with {setstr} pruned. map: {self.mAP}, macs: {self.macs}"
 
 
 class NodeFast(Node):
@@ -134,10 +137,12 @@ class NodeFast(Node):
 
         map_results_path = self.experiment_dir.joinpath(f"results/results_{setstr}.pickle")
         if map_results_path.exists() and not overwrite:
+            logging.debug(f'Loading results for {self}')
             with open(map_results_path, 'rb') as map_results_file:
                 bbox_map = pickle.load(map_results_file)
+            logging.debug(f'{bbox_map}')
         else:
-            print(f'Calculating results for {self}')
+            logging.debug(f'Calculating results for {self}')
             reproduced_results = []
             for mlvl_bboxes, mlvl_scores, featmap_sizes in zip(
                     self.mlvl_bboxes_per_img, self.mlvl_scores_per_img, self.featmap_sizes_per_img):
@@ -177,10 +182,11 @@ class NodeSlow(Node):
 
         map_results_path = self.experiment_dir.joinpath(f"results/results_{setstr}.pickle")
         if map_results_path.exists() and not overwrite:
+            logging.debug(f'Loading results for {self}')
             with open(map_results_path, 'rb') as map_results_file:
                 bbox_map = pickle.load(map_results_file)
         else:
-            print(f'Calculating results for {self}')
+            logging.debug(f'Calculating results for {self}')
             reproduced_results = []
             test_dataloader = mmdet.datasets.build_dataloader(
                 self.test_dataset,
@@ -250,20 +256,28 @@ class NodeSlow(Node):
         return bbox_map
 
 
-def update_pareto_front(pareto_front, new_node, strict=True):
+def update_pareto_front(pareto_front, new_node):
+    logging.debug(pareto_front)
+    logging.debug(repr(new_node))
     added_new_node = True
     updated_pareto_front = []
-    strict_bonus = 0 if strict else 0.001
+    # First check if any of the current pareto nodes are no longer pareto optimal
     for front_node in pareto_front:
-        if (front_node.mAP + strict_bonus <= new_node.mAP) and (front_node.macs >= new_node.macs):
+        if (front_node.mAP < new_node.mAP) and (front_node.macs >= new_node.macs):
+            logging.debug(f"Removing {repr(front_node)}")
+            continue
+        elif (front_node.bbox_results() == new_node.bbox_results()) and (front_node.macs > new_node.macs):
+            logging.debug(f"Removing {repr(front_node)}")
             continue
         else:
             updated_pareto_front.append(front_node)
+    # Check if the new node is pareto optimal (could not be determined by previous loop alone)
     for front_node in updated_pareto_front:
-        if (new_node.mAP + strict_bonus <= front_node.mAP) and (new_node.macs >= front_node.macs):
+        if (new_node.mAP <= front_node.mAP) and (new_node.macs >= front_node.macs):
             added_new_node = False
     if added_new_node:
         updated_pareto_front.append(new_node)
+        logging.debug(updated_pareto_front)
     return updated_pareto_front, added_new_node
 
 
@@ -358,36 +372,41 @@ class AnchorPruningTree:
                 child = Node.factory(self, anchors_to_remove)
             except ValueError:
                 continue
-            children.append(child)
+            if set(node.removed_anchors) != set(child.removed_anchors):
+                children.append(child)
         return children
 
     def process(self, min_map=0.2):
         try:
             while len(self.stack):
                 node_to_process = self.stack.pop()
-                print(f"Processing {node_to_process}")
+                logging.info(f"Processing {node_to_process}")
                 if str(node_to_process) in self.hashable_visited_nodes:
-                    print("Node already processed.")
+                    logging.info("Node already processed.")
                     continue
                 children = self.get_children(node_to_process)
                 pareto_children = []
                 for child in children:
                     if child.mAP > node_to_process.mAP:
-                        print(f'{child} performs best of all children and removing it IMPROVES the score,'
-                              f'so removing immediately.')
+                        logging.info(f'{child} performs best of all children and removing these anchors IMPROVES the score,'
+                              f'so we remove them immediately.')
                         pareto_children = [child]
                         break
                     elif child.bbox_results() == node_to_process.bbox_results():
-                        print(f'{child} performs equal to parent, so removing immediately.')
+                        logging.info(f'{child} performs equal to parent, so updating pareto front immediately.')
                         pareto_children = [child]
                         break
                     elif child.mAP >= min_map:
+                        logging.info(f'{child} does not perform better but reaches threshold so will be compared to pareto front.')
                         pareto_children, flag = update_pareto_front(pareto_children, child)
-
+                    else:
+                        logging.info(f'{child} does not reach the {min_map} threshold, so not further processed.')
                 for child in pareto_children:
+                    logging.debug(f"Potentially updating pareto front with {repr(child)}")
                     self.pareto_front, flag = update_pareto_front(self.pareto_front, child)
                     if flag:
                         self.stack.add(child)
+                        logging.debug(f"Added {repr(child)} to stack")
                 self.hashable_visited_nodes.add(str(node_to_process))
                 self.visited_nodes.add(node_to_process)
         except KeyboardInterrupt:
@@ -450,7 +469,8 @@ class AnchorPruningTreeSharedLayers(AnchorPruningTreeSlow):
                 child = Node.factory(self, anchors_to_remove)
             except ValueError:
                 continue
-            children.append(child)
+            if set(node.removed_anchors) != set(child.removed_anchors):
+                children.append(child)
         return children
 
 
@@ -475,7 +495,8 @@ class AnchorPruningTreeLayerwise(AnchorPruningTree):
                 child = Node.factory(self, anchors_to_remove)
             except ValueError:
                 continue
-            children.append(child)
+            if set(node.removed_anchors) != set(child.removed_anchors):
+                children.append(child)
         return children
 
     def process(self, max_anchors_layer=4, min_map=0.2):
